@@ -109,10 +109,10 @@ export default function Concepts() {
                   >
                     <td className="px-4 py-3 font-medium text-slate-800">{row.term}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1 flex-wrap">
+                      <div className="flex flex-col gap-1">
                         {row.subjects.map(s => (
                           <span key={s} className={`text-xs px-1.5 py-0.5 rounded-full ${SUBJECT_BG[s] ?? 'bg-slate-100 text-slate-600'}`}>
-                            {s.slice(0, 4)}
+                            {s}
                           </span>
                         ))}
                       </div>

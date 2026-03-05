@@ -305,3 +305,24 @@ export async function fetchLongevity(limit = 40): Promise<LongevityRow[]> {
 export async function fetchFilters(): Promise<FilterOptions> {
   return apiFetch<FilterOptions>('/filters')
 }
+
+export interface SemanticNode {
+  concept_id: number
+  term: string
+  subject: string
+  year: number
+  cluster: number
+  cluster_label: string
+  x: number
+  y: number
+}
+
+export interface SemanticClusterResponse {
+  nodes: SemanticNode[]
+  num_clusters: number
+  cluster_labels: Record<string, string>
+}
+
+export async function fetchSemanticClusters(nClusters = 8): Promise<SemanticClusterResponse> {
+  return apiFetch<SemanticClusterResponse>('/semantic-clusters', { n_clusters: nClusters })
+}

@@ -1,47 +1,37 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { fetchConcept, type ConceptDetailResponse, type Occurrence, type EdgeDetail } from '../lib/api'
+import { fetchConcept, type ConceptDetailResponse, type Occurrence } from '../lib/api'
 import { SUBJECT_BG, EDGE_NATURE_BG, SUBJECT_COLOURS } from '../lib/colours'
 import { highlightTerm, TERM_ORDER } from '../lib/utils.tsx'
 
-function OccurrenceTimelineCard({ occ, term, edges }: { occ: Occurrence; term: string; edges: EdgeDetail[] }) {
+// To revert to horizontal: change flex-col→flex, add overflow-x-auto + minWidth:max-content,
+// restore w-52 flex-shrink-0, line-clamp-4, subject.slice(0,4), and absolute edge badge.
+function OccurrenceTimelineCard({ occ, term }: { occ: Occurrence; term: string }) {
   const isIntro = Boolean(occ.is_introduction)
-  const fromEdge = edges.find(e => e.from_occurrence === occ.occurrence_id)
   const subjectColour = SUBJECT_COLOURS[occ.subject] ?? '#888'
 
   return (
-    <div className="relative">
-      <div
-        className="w-52 flex-shrink-0 bg-white rounded-xl border border-slate-100 shadow-sm p-3 flex flex-col gap-1.5"
-        style={{ borderTopColor: subjectColour, borderTopWidth: 3 }}
-      >
-        <div className="flex items-center justify-between gap-1">
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isIntro ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
-            {isIntro ? 'INTRO' : 'RECUR'}
-          </span>
-          <span className={`text-xs px-1.5 py-0.5 rounded-full ${SUBJECT_BG[occ.subject] ?? 'bg-slate-100'}`}>
-            {occ.subject.slice(0, 4)}
-          </span>
-        </div>
-        <div className="text-xs font-semibold text-slate-700">Y{occ.year} · {occ.term_period}</div>
-        <div className="text-xs text-slate-500 leading-tight">{occ.unit}</div>
-        {occ.chapter && occ.chapter !== 'null' && (
-          <div className="text-xs text-slate-400 leading-tight">{occ.chapter}</div>
-        )}
-        {occ.term_in_context && (
-          <p className="font-serif text-xs text-slate-500 leading-relaxed mt-1 border-t border-slate-50 pt-1.5 line-clamp-4">
-            {highlightTerm(occ.term_in_context, term)}
-          </p>
-        )}
+    <div
+      className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-col gap-2"
+      style={{ borderTopColor: subjectColour, borderTopWidth: 3 }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isIntro ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+          {isIntro ? 'INTRO' : 'RECUR'}
+        </span>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${SUBJECT_BG[occ.subject] ?? 'bg-slate-100'}`}>
+          {occ.subject}
+        </span>
       </div>
-      {/* Arrow + edge nature badge between cards */}
-      {fromEdge && (
-        <div className="absolute -right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 z-10">
-          <div className="w-6 h-px bg-slate-300" />
-          <span className={`text-xs px-1 py-0.5 rounded whitespace-nowrap ${EDGE_NATURE_BG[fromEdge.edge_nature] ?? 'bg-slate-100 text-slate-600'}`}>
-            {fromEdge.edge_nature.slice(0, 3)}
-          </span>
-        </div>
+      <div className="text-sm font-semibold text-slate-700">Y{occ.year} · {occ.term_period}</div>
+      <div className="text-sm text-slate-500">{occ.unit}</div>
+      {occ.chapter && occ.chapter !== 'null' && (
+        <div className="text-xs text-slate-400">{occ.chapter}</div>
+      )}
+      {occ.term_in_context && (
+        <p className="font-serif text-sm text-slate-600 leading-relaxed mt-1 border-t border-slate-100 pt-2">
+          {highlightTerm(occ.term_in_context, term)}
+        </p>
       )}
     </div>
   )
@@ -107,20 +97,28 @@ export default function ConceptDetail() {
         </div>
       </div>
 
-      {/* Timeline strip */}
+      {/* Timeline strip — vertical */}
       <div className="mb-8">
         <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">Curriculum Timeline</h2>
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-8 items-start" style={{ minWidth: 'max-content' }}>
-            {sorted.map((occ, i) => (
-              <div key={occ.occurrence_id} className="relative flex items-center gap-8">
-                <OccurrenceTimelineCard occ={occ} term={concept.term} edges={edges} />
+        <div className="flex flex-col gap-0 max-w-2xl">
+          {sorted.map((occ, i) => {
+            const fromEdge = edges.find(e => e.from_occurrence === occ.occurrence_id)
+            return (
+              <div key={occ.occurrence_id}>
+                <OccurrenceTimelineCard occ={occ} term={concept.term} />
                 {i < sorted.length - 1 && (
-                  <div className="text-slate-300 text-lg select-none">→</div>
+                  <div className="flex flex-col items-center py-2 gap-1">
+                    {fromEdge && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${EDGE_NATURE_BG[fromEdge.edge_nature] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {fromEdge.edge_nature}
+                      </span>
+                    )}
+                    <div className="text-slate-300 text-base select-none">↓</div>
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
+            )
+          })}
         </div>
       </div>
 

@@ -13,7 +13,7 @@ Interactive docs at: http://localhost:8000/docs
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import stats, graph, concepts, occurrences, edges
+from api.routes import stats, graph, concepts, occurrences, edges, semantic
 from api.db import DB_PATH
 
 app = FastAPI(
@@ -34,6 +34,7 @@ app.include_router(graph.router,       prefix="/api/graph",      tags=["graph"])
 app.include_router(concepts.router,    prefix="/api/concepts",   tags=["concepts"])
 app.include_router(occurrences.router, prefix="/api/occurrences",tags=["occurrences"])
 app.include_router(edges.router,       prefix="/api/edges",      tags=["edges"])
+app.include_router(semantic.router,    prefix="/api",            tags=["semantic"])
 
 
 @app.get("/")
