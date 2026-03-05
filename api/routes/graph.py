@@ -33,12 +33,14 @@ def get_graph(
                    ofrom.unit     AS from_unit,
                    ofrom.chapter  AS from_chapter,
                    ofrom.is_introduction AS from_is_intro,
+                   ofrom.term_in_context AS from_context,
                    oto.subject    AS to_subject,
                    oto.year       AS to_year,
                    oto.term       AS to_term,
                    oto.unit       AS to_unit,
                    oto.chapter    AS to_chapter,
-                   oto.is_introduction AS to_is_intro
+                   oto.is_introduction AS to_is_intro,
+                   oto.term_in_context AS to_context
             FROM edges e
             JOIN occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
             JOIN occurrences oto   ON e.to_occurrence   = oto.occurrence_id
@@ -71,7 +73,7 @@ def get_graph(
     # Build deduplicated node list from edge endpoints
     nodes: dict[int, dict] = {}
 
-    def _add_node(occ_id, term, concept_id, subj, year, term_period, unit, chapter, is_intro):
+    def _add_node(occ_id, term, concept_id, subj, year, term_period, unit, chapter, is_intro, context):
         if occ_id in nodes:
             return
         nodes[occ_id] = {
@@ -84,7 +86,7 @@ def get_graph(
             "unit": unit or "",
             "chapter": chapter or "",
             "is_introduction": bool(is_intro),
-            # Sortable curriculum position for timeline layout
+            "term_in_context": context or "",
             "curriculum_position": year * 10 + TERM_ORDER.get(term_period, 0),
         }
 
@@ -92,10 +94,10 @@ def get_graph(
     for e in raw_edges:
         _add_node(e["from_occurrence"], e["term"], e["concept_id"],
                   e["from_subject"], e["from_year"], e["from_term"],
-                  e["from_unit"], e["from_chapter"], e["from_is_intro"])
+                  e["from_unit"], e["from_chapter"], e["from_is_intro"], e.get("from_context"))
         _add_node(e["to_occurrence"], e["term"], e["concept_id"],
                   e["to_subject"], e["to_year"], e["to_term"],
-                  e["to_unit"], e["to_chapter"], e["to_is_intro"])
+                  e["to_unit"], e["to_chapter"], e["to_is_intro"], e.get("to_context"))
         edges_out.append({
             "source": e["from_occurrence"],
             "target": e["to_occurrence"],

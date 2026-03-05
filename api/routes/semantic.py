@@ -30,6 +30,7 @@ class SemanticNode(BaseModel):
     cluster_label: str
     x: float
     y: float
+    z: float
 
 
 class SemanticClusterResponse(BaseModel):
@@ -99,9 +100,9 @@ def _compute_clusters(n_clusters: int, context_weight: float) -> str:
     labels = clustering.fit_predict(embeddings)
 
     # 2D projection for layout (UMAP would be better but needs extra dep; PCA is fine)
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=3)
     coords = pca.fit_transform(embeddings)
-    # Scale to roughly ±300 to match graph coordinate space
+    # Scale to roughly ±300
     coords = coords / (np.abs(coords).max() + 1e-9) * 300
 
     # Auto-label clusters: find the most distinctive terms per cluster
@@ -127,6 +128,7 @@ def _compute_clusters(n_clusters: int, context_weight: float) -> str:
             "cluster_label": cluster_labels[int(labels[i])],
             "x": float(coords[i, 0]),
             "y": float(coords[i, 1]),
+            "z": float(coords[i, 2]),
         })
 
     return json.dumps({

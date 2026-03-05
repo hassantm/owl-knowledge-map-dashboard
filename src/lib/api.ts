@@ -25,6 +25,7 @@ export interface GraphNode {
   unit: string
   chapter: string
   is_introduction: boolean
+  term_in_context: string
   curriculum_position: number
 }
 
@@ -315,6 +316,7 @@ export interface SemanticNode {
   cluster_label: string
   x: number
   y: number
+  z: number
 }
 
 export interface SemanticClusterResponse {
