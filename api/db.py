@@ -1,12 +1,18 @@
 """
 Database connection for OWL FastAPI.
-Points at the existing SQLite database in the owl-knowledge-map project.
+Connects to PostgreSQL owl database on localhost.
+
+Migrated from SQLite: 2026-03-14
 """
 
-import sqlite3
-from pathlib import Path
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-DB_PATH = Path(__file__).parent.parent.parent / "owl-knowledge-map" / "db" / "owl_knowledge_map.db"
+PG_CONN_STRING = os.environ.get(
+    "OWL_DB_URL",
+    "dbname=owl user=htmadmin password=dev host=localhost port=5432"
+)
 
 TERM_ORDER_SQL = """
     CASE o.term
@@ -24,7 +30,5 @@ TERM_ORDER = {
 }
 
 
-def get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+def get_conn() -> psycopg2.extensions.connection:
+    return psycopg2.connect(PG_CONN_STRING)

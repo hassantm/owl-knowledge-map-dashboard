@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import stats, graph, concepts, occurrences, edges, semantic
-from api.db import DB_PATH
+from api.db import PG_CONN_STRING
 
 app = FastAPI(
     title="OWL Knowledge Map API",
@@ -41,7 +41,7 @@ app.include_router(semantic.router,    prefix="/api",            tags=["semantic
 def root():
     return {
         "status": "ok",
-        "db": str(DB_PATH),
-        "db_exists": DB_PATH.exists(),
+        "db": PG_CONN_STRING,
+        "db_exists": True,
         "docs": "/docs",
     }
