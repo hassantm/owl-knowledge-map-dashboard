@@ -5,6 +5,7 @@ import GraphView from './pages/GraphView'
 import ConceptDetail from './pages/ConceptDetail'
 import Browser from './pages/Browser'
 import Concepts from './pages/Concepts'
+import TimelineView from './pages/TimelineView'
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/graph" element={<GraphView />} />
+          <Route path="/timeline" element={<TimelineView />} />
           <Route path="/concepts" element={<Concepts />} />
           <Route path="/concepts/:id" element={<ConceptDetail />} />
           <Route path="/browse" element={<Browser />} />

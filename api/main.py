@@ -13,7 +13,7 @@ Interactive docs at: http://localhost:8000/docs
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import stats, graph, concepts, occurrences, edges, semantic
+from api.routes import stats, graph, concepts, occurrences, edges, semantic, timeline
 from api.db import PG_CONN_STRING
 
 app = FastAPI(
@@ -35,6 +35,7 @@ app.include_router(concepts.router,    prefix="/api/concepts",   tags=["concepts
 app.include_router(occurrences.router, prefix="/api/occurrences",tags=["occurrences"])
 app.include_router(edges.router,       prefix="/api/edges",      tags=["edges"])
 app.include_router(semantic.router,    prefix="/api",            tags=["semantic"])
+app.include_router(timeline.router,    prefix="/api",            tags=["timeline"])
 
 
 @app.get("/")
