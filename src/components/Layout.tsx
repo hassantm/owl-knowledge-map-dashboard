@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
+import { LayoutDashboard, Share2, CalendarRange, Bookmark, Search } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: '▤' },
-  { to: '/graph', label: 'Graph View', icon: '◎' },
-  { to: '/timeline', label: 'Timeline', icon: '⊞' },
-  { to: '/concepts', label: 'Concepts', icon: '◈' },
-  { to: '/browse', label: 'Browse', icon: '≡' },
+  { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
+  { to: '/graph', label: 'Graph View', Icon: Share2 },
+  { to: '/timeline', label: 'Timeline', Icon: CalendarRange },
+  { to: '/concepts', label: 'Concepts', Icon: Bookmark },
+  { to: '/browse', label: 'Browse', Icon: Search },
 ]
 
 interface LayoutProps {
@@ -17,16 +18,17 @@ export default function Layout({ children }: LayoutProps) {
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Sidebar */}
       <aside className="w-56 flex-shrink-0 bg-slate-900 text-white flex flex-col">
-        <div className="px-5 pt-6 pb-5 border-b border-slate-700">
-          <div className="text-base font-bold tracking-tight leading-tight">OWL Knowledge Map</div>
+        {/* Brand header — house purple accent */}
+        <div className="px-5 pt-6 pb-5 border-b border-slate-700" style={{ borderTopWidth: 3, borderTopColor: '#865595', borderTopStyle: 'solid' }}>
+          <div className="text-base font-semibold tracking-tight leading-tight">OWL Knowledge Map</div>
           <div className="text-xs text-slate-400 mt-1">Opening Worlds Curriculum</div>
         </div>
         <nav className="flex-1 py-4 px-2">
-          {NAV_ITEMS.map(item => (
+          {NAV_ITEMS.map(({ to, label, Icon }) => (
             <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
+              key={to}
+              to={to}
+              end={to === '/'}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium mb-1 transition-colors ${
                   isActive
@@ -35,8 +37,8 @@ export default function Layout({ children }: LayoutProps) {
                 }`
               }
             >
-              <span className="text-base leading-none">{item.icon}</span>
-              {item.label}
+              <Icon size={16} className="shrink-0" />
+              {label}
             </NavLink>
           ))}
         </nav>

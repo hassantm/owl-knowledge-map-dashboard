@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { fetchConcept, type ConceptDetailResponse, type Occurrence } from '../lib/api'
 import { SUBJECT_BG, EDGE_NATURE_BG, SUBJECT_COLOURS } from '../lib/colours'
 import { highlightTerm, TERM_ORDER } from '../lib/utils.tsx'
@@ -77,17 +77,26 @@ export default function ConceptDetail() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <button
-        onClick={() => navigate(-1)}
-        className="text-sm text-slate-400 hover:text-slate-700 mb-6 flex items-center gap-1"
-      >
-        ← Back
-      </button>
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-sm text-slate-400 hover:text-slate-700 flex items-center gap-1"
+        >
+          ← Back
+        </button>
+        {/* T14 — link to Timeline with concept pre-filled */}
+        <Link
+          to={`/timeline?search=${encodeURIComponent(concept.term)}`}
+          className="text-sm text-slate-400 hover:text-slate-700 flex items-center gap-1"
+        >
+          View in timeline →
+        </Link>
+      </div>
 
-      {/* Heading */}
+      {/* T13 — normalised heading */}
       <div className="flex items-start gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">{concept.term}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">{concept.term}</h1>
           <div className="flex items-center gap-2">
             {allSubjects.map(s => (
               <span key={s} className={`text-sm px-3 py-1 rounded-full font-medium ${SUBJECT_BG[s] ?? 'bg-slate-100'}`}>{s}</span>

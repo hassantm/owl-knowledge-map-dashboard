@@ -16,7 +16,8 @@ export default function OccurrenceCard({ occurrence, compact }: OccurrenceCardPr
 
   return (
     <div
-      className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:border-slate-300 transition-colors ${compact ? 'p-3' : 'p-4'}`}
+      className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:border-slate-300 transition-colors border-l-4 ${compact ? 'p-3' : 'p-4'}`}
+      style={{ borderLeftColor: subjectColour }}
       onClick={() => navigate(`/concepts/${occurrence.concept_id}`)}
     >
       {/* Header row */}

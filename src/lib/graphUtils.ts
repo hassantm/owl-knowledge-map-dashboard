@@ -3,6 +3,8 @@
  * No React, no Sigma, no ForceGraph — just logic. Easily testable.
  */
 import type { GraphResponse, GraphNode, GraphEdge } from './api'
+import { SUBJECT_COLOURS } from './colours'
+export { SUBJECT_COLOURS }
 
 export interface FGNode {
   id: string
@@ -44,10 +46,6 @@ const PALETTE = [
   '#06b6d4','#e11d48','#d97706','#7c3aed','#059669',
 ]
 export const communityColour = (id: number) => PALETTE[id % PALETTE.length]
-
-export const SUBJECT_COLOURS: Record<string, string> = {
-  History: '#6366f1', Geography: '#22c55e', Religion: '#f59e0b',
-}
 
 export const EDGE_COLOURS: Record<string, string> = {
   reinforcement: '#94a3b8', extension: '#3b82f6', application: '#f97316',

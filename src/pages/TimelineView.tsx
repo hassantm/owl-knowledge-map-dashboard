@@ -1,4 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo, useDeferredValue } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { TIMELINE_SUBJECT } from '../lib/colours'
 
 interface Concept {
   id: number
@@ -21,12 +23,6 @@ const SUBJECT_LABELS: Record<string, string> = {
   rw: 'Religion & Worldviews',
 }
 
-const SUBJECT_COLOURS: Record<string, { bg: string; chip: string; header: string }> = {
-  history:   { bg: 'bg-amber-50',   chip: 'bg-amber-100 text-amber-900 border-amber-300',   header: 'bg-amber-200 text-amber-900' },
-  geography: { bg: 'bg-teal-50',    chip: 'bg-teal-100 text-teal-900 border-teal-300',       header: 'bg-teal-200 text-teal-900' },
-  rw:        { bg: 'bg-rose-50',    chip: 'bg-rose-100 text-rose-900 border-rose-300',       header: 'bg-rose-200 text-rose-900' },
-}
-
 const TERMS = ['Autumn1', 'Autumn2', 'Spring1', 'Spring2', 'Summer1', 'Summer2']
 const TERM_LABELS: Record<string, string> = {
   Autumn1: 'Aut 1', Autumn2: 'Aut 2',
@@ -39,9 +35,13 @@ const SUBJECTS = ['history', 'geography', 'rw'] as const
 export default function TimelineView() {
   const [units, setUnits] = useState<Unit[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [searchParams] = useSearchParams()
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
   const [hoveredConceptId, setHoveredConceptId] = useState<number | null>(null)
   const [hoveredUnitKeys, setHoveredUnitKeys] = useState<Set<string>>(new Set())
+
+  // T10 — defer expensive filter re-renders while typing
+  const deferredSearch = useDeferredValue(search)
 
   useEffect(() => {
     fetch('/api/timeline')
@@ -50,24 +50,30 @@ export default function TimelineView() {
       .catch(() => setLoading(false))
   }, [])
 
-  // Build lookups
-  const unitMap = new Map<string, Unit>()
-  for (const u of units) unitMap.set(u.key, u)
+  // T02 — memoize lookups so handleConceptHover is stable
+  const unitMap = useMemo(() => {
+    const m = new Map<string, Unit>()
+    for (const u of units) m.set(u.key, u)
+    return m
+  }, [units])
 
-  const conceptUnitMap = new Map<number, string[]>()
-  for (const u of units) {
-    for (const c of u.concepts) {
-      if (!conceptUnitMap.has(c.id)) conceptUnitMap.set(c.id, [])
-      conceptUnitMap.get(c.id)!.push(u.key)
+  const conceptUnitMap = useMemo(() => {
+    const m = new Map<number, string[]>()
+    for (const u of units) {
+      for (const c of u.concepts) {
+        if (!m.has(c.id)) m.set(c.id, [])
+        m.get(c.id)!.push(u.key)
+      }
     }
-  }
+    return m
+  }, [units])
 
   const handleConceptHover = useCallback((conceptId: number | null) => {
     setHoveredConceptId(conceptId)
     setHoveredUnitKeys(conceptId ? new Set(conceptUnitMap.get(conceptId) ?? []) : new Set())
   }, [conceptUnitMap])
 
-  const searchLower = search.toLowerCase().trim()
+  const searchLower = deferredSearch.toLowerCase().trim()
   const conceptMatchesSearch = (c: Concept) => !searchLower || c.name.toLowerCase().includes(searchLower)
   const unitHasMatch = (u: Unit) => !searchLower || u.concepts.some(conceptMatchesSearch)
 
@@ -77,33 +83,39 @@ export default function TimelineView() {
 
   return (
     <div className="p-4">
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-4 flex-wrap">
-        <h1 className="text-xl font-bold text-slate-800">Timeline Matrix</h1>
-        <input
-          type="search"
-          placeholder="Search concepts…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="border border-slate-300 rounded px-3 py-1.5 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <div className="flex gap-3 ml-2 text-xs text-slate-500">
-          {SUBJECTS.map(s => (
-            <span key={s} className={`px-2 py-0.5 rounded border ${SUBJECT_COLOURS[s].chip}`}>
-              {SUBJECT_LABELS[s]}
-            </span>
-          ))}
+      {/* T13 — normalised header */}
+      <div className="mb-4 flex items-start gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Timeline Matrix</h1>
+          <p className="text-sm text-slate-500 mb-2">All curriculum concepts mapped by year, term, and subject</p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap mt-1">
+          {/* T16 — clearer placeholder */}
+          <input
+            type="search"
+            placeholder="Highlight a concept…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="border border-slate-300 rounded px-3 py-1.5 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <div className="flex gap-3 text-xs text-slate-500">
+            {SUBJECTS.map(s => (
+              <span key={s} className={`px-2 py-0.5 rounded border ${TIMELINE_SUBJECT[s].chip}`}>
+                {SUBJECT_LABELS[s]}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Status bar */}
-      {hoveredConceptId !== null && (
-        <div className="mb-2 text-xs text-slate-500">
-          Highlighting <strong className="text-slate-700">
+      {/* T03 — always rendered at fixed height to prevent layout shift */}
+      <div className={`mb-2 text-xs text-slate-500 h-5 ${hoveredConceptId === null ? 'invisible' : ''}`}>
+        {hoveredConceptId !== null && (
+          <>Highlighting <strong className="text-slate-700">
             {units.flatMap(u => u.concepts).find(c => c.id === hoveredConceptId)?.name}
-          </strong> — appears in {hoveredUnitKeys.size} unit{hoveredUnitKeys.size !== 1 ? 's' : ''}
-        </div>
-      )}
+          </strong> — appears in {hoveredUnitKeys.size} unit{hoveredUnitKeys.size !== 1 ? 's' : ''}</>
+        )}
+      </div>
 
       {/* Table: rows = year × term, columns = subjects */}
       <table className="border-collapse w-full text-xs table-fixed">
@@ -115,7 +127,7 @@ export default function TimelineView() {
             {SUBJECTS.map(s => (
               <th
                 key={s}
-                className={`border border-slate-200 px-3 py-2 text-center font-semibold sticky top-0 z-10 ${SUBJECT_COLOURS[s].header}`}
+                className={`border border-slate-200 px-3 py-2 text-center font-semibold sticky top-0 z-10 ${TIMELINE_SUBJECT[s].header}`}
               >
                 {SUBJECT_LABELS[s]}
               </th>
@@ -129,10 +141,6 @@ export default function TimelineView() {
                 .replace('autumn', 'aut')
                 .replace('spring', 'spr')
                 .replace('summer', 'sum')
-
-              // Check if any cell in this row has content
-              const rowUnits = SUBJECTS.map(s => unitMap.get(`y${year}_${termNorm}_${s}`))
-              const anyContent = rowUnits.some(Boolean)
 
               return (
                 <tr
@@ -157,8 +165,10 @@ export default function TimelineView() {
                     return (
                       <td
                         key={key}
-                        className={`border border-slate-200 px-2 py-2 align-top ${
-                          SUBJECT_COLOURS[subject].bg
+                        // T04 — smooth ring + opacity transitions
+                        // T05 — transition-all covers opacity for cell dimming
+                        className={`border border-slate-200 px-2 py-2 align-top transition-all duration-100 ${
+                          TIMELINE_SUBJECT[subject].bg
                         } ${isHighlighted ? 'ring-2 ring-inset ring-blue-400' : ''} ${
                           dimmed ? 'opacity-25' : ''
                         }`}
@@ -169,25 +179,28 @@ export default function TimelineView() {
                             <div className="font-semibold text-slate-700 mb-1.5 leading-tight">
                               {unit.title}
                             </div>
-                            <div className="flex flex-wrap gap-0.5">
-                              {unit.concepts
-                                .filter(c => !searchLower || conceptMatchesSearch(c))
-                                .map(c => (
+                            {/* T05 — min-h preserves cell height; non-matching chips use opacity-0 (stay in DOM) */}
+                            <div className="flex flex-wrap gap-0.5 min-h-[3rem]">
+                              {unit.concepts.map(c => {
+                                const matches = conceptMatchesSearch(c)
+                                return (
                                   <span
                                     key={c.id}
                                     onMouseEnter={() => handleConceptHover(c.id)}
                                     onMouseLeave={() => handleConceptHover(null)}
-                                    className={`inline-block px-1.5 py-0 rounded border cursor-default leading-5 transition-colors ${
+                                    className={`inline-block px-1.5 py-0 rounded border cursor-default leading-5 transition-opacity duration-150 ${
+                                      searchLower && !matches ? 'opacity-0 pointer-events-none' : ''
+                                    } ${
                                       hoveredConceptId === c.id
                                         ? 'bg-blue-200 text-blue-900 border-blue-400'
-                                        : SUBJECT_COLOURS[subject].chip
+                                        : TIMELINE_SUBJECT[subject].chip
                                     }`}
                                     title={`Appears in ${(conceptUnitMap.get(c.id) ?? []).length} unit(s)`}
                                   >
                                     {c.name}
                                   </span>
-                                ))}
-
+                                )
+                              })}
                             </div>
                           </>
                         ) : (
