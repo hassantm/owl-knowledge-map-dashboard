@@ -106,7 +106,7 @@ export default function TimelineView() {
       )}
 
       {/* Table: rows = year × term, columns = subjects */}
-      <table className="border-collapse w-full text-xs">
+      <table className="border-collapse w-full text-xs table-fixed">
         <thead>
           <tr>
             <th className="w-20 border border-slate-200 bg-slate-100 px-2 py-2 text-left text-slate-500 font-medium sticky top-0 z-10">
@@ -157,7 +157,7 @@ export default function TimelineView() {
                     return (
                       <td
                         key={key}
-                        className={`border border-slate-200 px-2 py-2 align-top transition-colors ${
+                        className={`border border-slate-200 px-2 py-2 align-top ${
                           SUBJECT_COLOURS[subject].bg
                         } ${isHighlighted ? 'ring-2 ring-inset ring-blue-400' : ''} ${
                           dimmed ? 'opacity-25' : ''
@@ -172,15 +172,14 @@ export default function TimelineView() {
                             <div className="flex flex-wrap gap-0.5">
                               {unit.concepts
                                 .filter(c => !searchLower || conceptMatchesSearch(c))
-                                .slice(0, 25)
                                 .map(c => (
                                   <span
                                     key={c.id}
                                     onMouseEnter={() => handleConceptHover(c.id)}
                                     onMouseLeave={() => handleConceptHover(null)}
-                                    className={`inline-block px-1.5 py-0 rounded border cursor-default leading-5 transition-all ${
+                                    className={`inline-block px-1.5 py-0 rounded border cursor-default leading-5 transition-colors ${
                                       hoveredConceptId === c.id
-                                        ? 'bg-blue-200 text-blue-900 border-blue-400 font-semibold z-10 relative'
+                                        ? 'bg-blue-200 text-blue-900 border-blue-400'
                                         : SUBJECT_COLOURS[subject].chip
                                     }`}
                                     title={`Appears in ${(conceptUnitMap.get(c.id) ?? []).length} unit(s)`}
@@ -188,12 +187,7 @@ export default function TimelineView() {
                                     {c.name}
                                   </span>
                                 ))}
-                              {(() => {
-                                const filtered = unit.concepts.filter(c => !searchLower || conceptMatchesSearch(c))
-                                return filtered.length > 25 ? (
-                                  <span className="text-slate-400 italic">+{filtered.length - 25} more</span>
-                                ) : null
-                              })()}
+
                             </div>
                           </>
                         ) : (
