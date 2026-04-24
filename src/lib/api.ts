@@ -325,6 +325,157 @@ export interface SemanticClusterResponse {
   cluster_labels: Record<string, string>
 }
 
+// ─── Vocabulary Explorer types ────────────────────────────────────────────────
+
+export interface NavigationResponse {
+  subjects: string[]
+  hierarchy: Record<string, Record<string, Record<string, string[]>>>
+}
+
+export interface ClusterConcept {
+  concept_id: number
+  term: string
+  tier: number | null
+  is_introduction: boolean
+  is_centre: boolean
+  is_bridge: boolean
+  bridge_subjects: string[]
+}
+
+export interface ClusterCentreInfo {
+  concept_id: number
+  term: string
+  tier: number | null
+  is_bridge: boolean
+  bridge_subjects: string[]
+}
+
+export interface Cluster {
+  cluster_id: number
+  label: string
+  label_generated: boolean
+  centre_concept: ClusterCentreInfo
+  concepts: ClusterConcept[]
+}
+
+export interface ChapterClustersResponse {
+  unit: string
+  chapter: string
+  clusters: Cluster[]
+}
+
+export interface WordDetailConcept {
+  concept_id: number
+  term: string
+  definition: string | null
+  etymology: string | null
+  word_family: string[] | null
+  register: string | null
+  tier: number | null
+}
+
+export interface TrajectoryEntry {
+  year: number
+  term_period: string
+  unit: string
+  chapter: string | null
+  is_introduction: number
+}
+
+export interface NeighbourEntry {
+  concept_id: number
+  term: string
+  weight: number
+  is_cross_subject: boolean
+  subject_a: string
+  subject_b: string
+}
+
+export interface BridgeDetail {
+  other_subject: string
+  weight: number
+  granularity: string
+}
+
+export interface WordDetailContext {
+  concept: WordDetailConcept
+  trajectory: TrajectoryEntry[]
+  neighbourhood: NeighbourEntry[]
+  bridge_details: BridgeDetail[]
+}
+
+export interface WordDetailStreamCallbacks {
+  onContext: (ctx: WordDetailContext) => void
+  onToken: (text: string) => void
+  onDone: (usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number }) => void
+  onError: (message: string) => void
+  signal?: AbortSignal
+}
+
+// ─── Vocabulary API functions ─────────────────────────────────────────────────
+
+export async function fetchVocabNavigation(): Promise<NavigationResponse> {
+  return apiFetch<NavigationResponse>('/vocabulary/navigation')
+}
+
+export async function fetchChapterClusters(unit: string, chapter: string): Promise<ChapterClustersResponse> {
+  return apiFetch<ChapterClustersResponse>('/vocabulary/chapter-clusters', { unit, chapter })
+}
+
+export async function streamWordDetail(
+  conceptId: number,
+  unit: string,
+  chapter: string,
+  cb: WordDetailStreamCallbacks,
+): Promise<void> {
+  const params = new URLSearchParams({
+    concept_id: String(conceptId),
+    unit,
+    chapter,
+  })
+  let res: Response
+  try {
+    res = await fetch(`/api/vocabulary/word-detail?${params}`, { signal: cb.signal })
+  } catch {
+    cb.onError('Network error')
+    return
+  }
+
+  if (!res.ok || !res.body) {
+    cb.onError(`HTTP ${res.status}`)
+    return
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+
+    let idx: number
+    while ((idx = buffer.indexOf('\n\n')) !== -1) {
+      const frame = buffer.slice(0, idx)
+      buffer = buffer.slice(idx + 2)
+      const evMatch = /^event: (\w+)/m.exec(frame)
+      const ev = evMatch ? evMatch[1] : 'message'
+      const dataLine = frame.split('\n').find(l => l.startsWith('data: '))
+      if (!dataLine) continue
+      try {
+        const payload = JSON.parse(dataLine.slice(6))
+        if (ev === 'context') cb.onContext(payload as WordDetailContext)
+        else if (ev === 'token') cb.onToken((payload as { text: string }).text)
+        else if (ev === 'done') cb.onDone(payload)
+        else if (ev === 'error') cb.onError((payload as { message: string }).message)
+      } catch {
+        // malformed frame — skip
+      }
+    }
+  }
+}
+
 export async function fetchSemanticClusters(nClusters = 8): Promise<SemanticClusterResponse> {
   return apiFetch<SemanticClusterResponse>('/semantic-clusters', { n_clusters: nClusters })
 }

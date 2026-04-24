@@ -1,59 +1,60 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Share2, CalendarRange, Bookmark, Search } from 'lucide-react'
+import { BookOpen, Share2, CalendarRange, Bookmark, Search, BarChart3, Sparkles } from 'lucide-react'
 
-const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
-  { to: '/graph', label: 'Graph View', Icon: Share2 },
+const NAV = [
+  { to: '/', label: 'Prepare', Icon: BookOpen, end: true },
+  { to: '/architecture', label: 'Architecture', Icon: Share2 },
   { to: '/timeline', label: 'Timeline', Icon: CalendarRange },
   { to: '/concepts', label: 'Concepts', Icon: Bookmark },
   { to: '/browse', label: 'Browse', Icon: Search },
+  { to: '/overview', label: 'Overview', Icon: BarChart3 },
+  { to: '/vocabulary', label: 'Vocabulary', Icon: Sparkles },
 ]
 
-interface LayoutProps {
-  children: React.ReactNode
-}
-
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 bg-slate-900 text-white flex flex-col">
-        {/* Brand header — house purple accent */}
-        <div className="px-5 pt-6 pb-5 border-b border-slate-700" style={{ borderTopWidth: 3, borderTopColor: '#865595', borderTopStyle: 'solid' }}>
-          <div className="text-base font-semibold tracking-tight leading-tight">OWL Knowledge Map</div>
-          <div className="text-xs text-slate-400 mt-1">Opening Worlds Curriculum</div>
-        </div>
-        <nav className="flex-1 py-4 px-2">
-          {NAV_ITEMS.map(({ to, label, Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium mb-1 transition-colors ${
-                  isActive
-                    ? 'bg-slate-700 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <Icon size={16} className="shrink-0" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="px-5 py-4 border-t border-slate-700">
-          <div className="text-xs text-slate-500">
-            Counsell &amp; Mastin<br />
-            Opening Worlds Ltd
-          </div>
-        </div>
-      </aside>
+    <div className="min-h-screen flex flex-col">
+      {/* Top navigation bar */}
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-40">
+        <div className="max-w-[1440px] mx-auto px-6 flex items-center h-14 gap-8">
+          {/* Brand */}
+          <NavLink to="/" className="flex items-center gap-2.5 shrink-0">
+            <div className="w-1.5 h-7 rounded-full bg-owl-purple" />
+            <div>
+              <div className="text-sm font-bold tracking-tight text-ink leading-none">
+                OWL Knowledge Map
+              </div>
+              <div className="text-[10px] text-slate-400 leading-tight">
+                Opening Worlds Curriculum
+              </div>
+            </div>
+          </NavLink>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto min-h-0 h-full">
-        {children}
-      </main>
+          {/* Navigation links */}
+          <nav className="flex items-center gap-1 overflow-x-auto">
+            {NAV.map(({ to, label, Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'bg-owl-purple/10 text-owl-purple font-semibold'
+                      : 'text-slate-500 hover:text-ink hover:bg-slate-50'
+                  }`
+                }
+              >
+                <Icon size={15} />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      {/* Page content */}
+      <main className="flex-1">{children}</main>
     </div>
   )
 }

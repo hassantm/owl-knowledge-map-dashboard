@@ -12,18 +12,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "3d-force-graph": "^1.79.1",
-    "graphology": "^0.25.4",
-    "graphology-communities-louvain": "^2.0.2",
-    "graphology-layout": "^0.6.1",
-    "graphology-layout-forceatlas2": "^0.10.1",
     "lucide-react": "^1.7.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-force-graph": "^1.48.2",
     "react-router-dom": "^7.1.0",
-    "recharts": "^2.14.1",
-    "sigma": "^3.0.0"
+    "recharts": "^2.14.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

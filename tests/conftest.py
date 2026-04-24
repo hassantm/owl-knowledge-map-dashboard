@@ -21,9 +21,18 @@ from api.main import app
 
 CREATE_SCHEMA = """
 CREATE TABLE concepts (
-    concept_id   INTEGER PRIMARY KEY,
-    term         TEXT NOT NULL,
-    subject_area TEXT
+    concept_id        INTEGER PRIMARY KEY,
+    term              TEXT NOT NULL,
+    subject_area      TEXT,
+    tier              INTEGER,
+    register          TEXT,
+    definition        TEXT,
+    etymology         TEXT,
+    word_family       TEXT,
+    enrichment_status TEXT DEFAULT 'approved',
+    enrichment_notes  TEXT,
+    enriched_at       TEXT,
+    enriched_by       TEXT
 );
 
 CREATE TABLE occurrences (
@@ -48,6 +57,19 @@ CREATE TABLE occurrences (
     audit_notes       TEXT
 );
 
+CREATE TABLE co_occurrences (
+    id              INTEGER PRIMARY KEY,
+    concept_a_id    INTEGER REFERENCES concepts(concept_id),
+    concept_b_id    INTEGER REFERENCES concepts(concept_id),
+    subject_a       TEXT NOT NULL,
+    subject_b       TEXT NOT NULL,
+    granularity     TEXT NOT NULL,
+    weight          INTEGER NOT NULL DEFAULT 1,
+    is_cross_subject INTEGER GENERATED ALWAYS AS (
+        CASE WHEN subject_a != subject_b THEN 1 ELSE 0 END
+    ) VIRTUAL
+);
+
 CREATE TABLE edges (
     edge_id         INTEGER PRIMARY KEY,
     from_occurrence INTEGER REFERENCES occurrences(occurrence_id),
@@ -63,9 +85,12 @@ CREATE TABLE edges (
 # 3 concepts, 6 occurrences (1 unconfirmed), 3 edges
 
 SEED_DATA = """
-INSERT INTO concepts VALUES (1, 'empire',      'History');
-INSERT INTO concepts VALUES (2, 'persecution', NULL);
-INSERT INTO concepts VALUES (3, 'trade',       'Geography');
+INSERT INTO concepts VALUES (1,'empire',      'History',  3,'subject-specific','Rule over territory','From Latin imperium','empire,imperial,imperialism,emperor','approved',NULL,NULL,NULL);
+INSERT INTO concepts VALUES (2,'persecution', NULL,       2,'academic',         NULL,                  NULL,                  NULL,                                   'approved',NULL,NULL,NULL);
+INSERT INTO concepts VALUES (3,'trade',       'Geography',2,'high-utility',     NULL,                  NULL,                  NULL,                                   'approved',NULL,NULL,NULL);
+-- vocabulary-tool extra concepts
+INSERT INTO concepts VALUES (4,'republic',    'History',  3,'subject-specific','Government by people', NULL,                  NULL,                                   'approved',NULL,NULL,NULL);
+INSERT INTO concepts VALUES (5,'pending_word','History',  2,'academic',         NULL,                  NULL,                  NULL,                                   'pending', NULL,NULL,NULL);
 
 -- empire: intro History Y3 Autumn1, recurs History Y4 Spring2
 INSERT INTO occurrences VALUES
@@ -91,6 +116,16 @@ INSERT INTO occurrences VALUES
 INSERT INTO edges VALUES (1,1,2,'within_subject', 'extension',    'Hassan Mamdani','2026-03-01');
 INSERT INTO edges VALUES (2,3,4,'cross_subject',  'application',  'Hassan Mamdani','2026-03-01');
 INSERT INTO edges VALUES (3,1,3,'cross_subject',  'reinforcement','Hassan Mamdani','2026-03-01');
+
+-- vocabulary-tool extra: republic co-occurring with empire in same chapter
+INSERT INTO occurrences VALUES
+  (7,4,'History',3,'Autumn1','Ancient Egypt','1. Pharaohs',3,1,'The republic ended.',NULL,0,NULL,'confirmed',NULL,NULL,NULL,NULL,NULL);
+
+-- co_occurrences: empire+republic (History lesson), empire+trade (cross-subject lesson)
+INSERT INTO co_occurrences(id,concept_a_id,concept_b_id,subject_a,subject_b,granularity,weight)
+  VALUES (1,1,4,'History','History','lesson',2);
+INSERT INTO co_occurrences(id,concept_a_id,concept_b_id,subject_a,subject_b,granularity,weight)
+  VALUES (2,1,3,'History','Geography','lesson',1);
 """
 
 # ─── Fixture ──────────────────────────────────────────────────────────────────
@@ -101,7 +136,89 @@ ROUTE_MODULES = [
     "api.routes.concepts.get_conn",
     "api.routes.occurrences.get_conn",
     "api.routes.edges.get_conn",
+    "api.routes.vocabulary.get_conn",
 ]
+
+
+def _pg_to_sqlite(sql: str, params: tuple) -> tuple[str, tuple]:
+    """
+    Translate psycopg2-style SQL to SQLite-compatible SQL.
+    Handles:
+      - %s → ? placeholder substitution
+      - = ANY(?) / = ANY(%s) → IN (?,?,…) with list expansion
+      - LEAST(a,b) → MIN(a,b) / GREATEST(a,b) → MAX(a,b)
+      - CAST(x AS TEXT) already works; strip residual ::text casts
+    """
+    import re
+
+    sql = sql.replace("LEAST(", "MIN(").replace("GREATEST(", "MAX(")
+    # strip PostgreSQL cast syntax: ::text, ::int, etc.
+    sql = re.sub(r"::\w+", "", sql)
+
+    # Expand = ANY(%s) or = ANY(?) where the matching param is a list/tuple
+    # We iterate through occurrences in order, consuming params left-to-right.
+    new_sql_parts: list[str] = []
+    new_params: list = []
+    param_iter = iter(params)
+
+    i = 0
+    while i < len(sql):
+        # Look for placeholder occurrences
+        any_match  = re.match(r"=\s*ANY\s*\(%s\)", sql[i:], re.IGNORECASE)
+        any_match2 = re.match(r"=\s*ANY\s*\(\?\)",  sql[i:], re.IGNORECASE)
+        pct_s      = sql[i:i+2] == "%s"
+
+        if any_match or any_match2:
+            end = i + (any_match or any_match2).end()
+            try:
+                val = next(param_iter)
+            except StopIteration:
+                val = []
+            if isinstance(val, (list, tuple)):
+                placeholders = ", ".join(["?"] * len(val))
+                new_sql_parts.append(f"IN ({placeholders})")
+                new_params.extend(val)
+            else:
+                new_sql_parts.append("= ?")
+                new_params.append(val)
+            i = end
+        elif pct_s:
+            try:
+                val = next(param_iter)
+            except StopIteration:
+                val = None
+            new_sql_parts.append("?")
+            new_params.append(val)
+            i += 2
+        else:
+            new_sql_parts.append(sql[i])
+            i += 1
+
+    return "".join(new_sql_parts), tuple(new_params)
+
+
+class _ContextCursor:
+    """Wraps a sqlite3.Cursor to add context-manager support and SQL translation.
+
+    sqlite3.Cursor doesn't implement __enter__/__exit__ on all platforms.
+    Routes use `with conn.cursor(...) as cur:` so we add the protocol here.
+    Also translates psycopg2-style %s placeholders and PostgreSQL functions.
+    """
+    def __init__(self, cur: sqlite3.Cursor):
+        self._cur = cur
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def execute(self, sql, params=()):
+        sql, params = _pg_to_sqlite(sql, params)
+        return self._cur.execute(sql, params)
+
+    def __getattr__(self, name):
+        return getattr(self._cur, name)
 
 
 class _UnclosableConnection:
@@ -109,9 +226,15 @@ class _UnclosableConnection:
 
     Routes call conn.close() in their finally blocks; we need the in-memory
     DB to survive across multiple requests within a single test.
+
+    cursor_factory is accepted and ignored — SQLite uses the row_factory
+    already set on the connection instead of psycopg2's RealDictCursor.
     """
     def __init__(self, conn: sqlite3.Connection):
         self._conn = conn
+
+    def cursor(self, cursor_factory=None):
+        return _ContextCursor(self._conn.cursor())
 
     def close(self):
         pass  # intentional no-op
