@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from psycopg2.extras import RealDictCursor
 from api.db import get_conn
 
 router = APIRouter()
@@ -32,7 +33,7 @@ def list_story_packs(
 
         where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(f"""
                 SELECT
                     sp.id,
@@ -73,7 +74,7 @@ def list_story_packs(
 def get_story_pack(pack_id: int) -> dict:
     conn = get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 SELECT
                     sp.*,
@@ -98,7 +99,7 @@ def get_story_pack(pack_id: int) -> dict:
 def approve_story_pack(pack_id: int, body: ApproveRequest) -> dict:
     conn = get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 UPDATE generated_story_packs
                 SET human_approved = true,
@@ -121,7 +122,7 @@ def approve_story_pack(pack_id: int, body: ApproveRequest) -> dict:
 def unapprove_story_pack(pack_id: int) -> dict:
     conn = get_conn()
     try:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 UPDATE generated_story_packs
                 SET human_approved = false,

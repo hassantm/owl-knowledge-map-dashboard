@@ -160,11 +160,11 @@ function PackDetail({ id, onApprovalChange }: { id: number; onApprovalChange: ()
       )}
 
       {/* Warnings */}
-      {pack.warnings?.length > 0 && (
+      {(pack.warnings ?? []).length > 0 && (
         <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded p-3">
           <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
           <ul className="text-xs text-amber-700 space-y-0.5">
-            {pack.warnings.map((w, i) => <li key={i}>{w}</li>)}
+            {(pack.warnings ?? []).map((w, i) => <li key={i}>{w}</li>)}
           </ul>
         </div>
       )}
