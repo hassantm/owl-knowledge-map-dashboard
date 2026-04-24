@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle, Clock, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 const BASE = '/api'
 
@@ -74,6 +75,76 @@ function ScoreBadge({ score }: { score: number }) {
                : score >= 3 ? 'bg-amber-100 text-amber-700'
                : 'bg-red-100 text-red-700'
   return <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${colour}`}>{score}/5</span>
+}
+
+// Annotation colour map — keyed on the first word inside the bracket
+const ANNOTATION_COLOURS: Record<string, string> = {
+  PAUSE:       'bg-purple-100 text-purple-700 border-purple-200',
+  PACE:        'bg-blue-100 text-blue-700 border-blue-200',
+  VOICE:       'bg-teal-100 text-teal-700 border-teal-200',
+  GESTURE:     'bg-orange-100 text-orange-700 border-orange-200',
+  FEEL:        'bg-pink-100 text-pink-700 border-pink-200',
+  REPEAT:      'bg-yellow-100 text-yellow-700 border-yellow-200',
+  HERALD:      'bg-indigo-100 text-indigo-700 border-indigo-200',
+  PARTICIPATE: 'bg-green-100 text-green-700 border-green-200',
+  'EYE CONTACT': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  SLIDE:       'bg-slate-200 text-slate-600 border-slate-300',
+  UNVERIFIED:  'bg-red-100 text-red-700 border-red-200',
+}
+
+const ANNOTATION_RE = /\[([^\]]+)\]/g
+
+function annotateText(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = []
+  let last = 0
+  let match
+  ANNOTATION_RE.lastIndex = 0
+  while ((match = ANNOTATION_RE.exec(text)) !== null) {
+    if (match.index > last) parts.push(text.slice(last, match.index))
+    const inner = match[1]
+    const key = inner.split(':')[0].trim().toUpperCase()
+    const colour = ANNOTATION_COLOURS[key] ?? 'bg-slate-100 text-slate-600 border-slate-200'
+    parts.push(
+      <span key={match.index}
+        className={`inline-flex items-center text-[11px] font-semibold px-1.5 py-0.5 rounded border mx-0.5 leading-none ${colour}`}>
+        {inner}
+      </span>
+    )
+    last = match.index + match[0].length
+  }
+  if (last < text.length) parts.push(text.slice(last))
+  return parts
+}
+
+function StoryText({ text }: { text: string }) {
+  return (
+    <div className="prose prose-sm max-w-none text-ink leading-relaxed [&>h1]:text-lg [&>h1]:font-bold [&>h1]:mb-2 [&>h2]:text-base [&>h2]:font-semibold [&>h2]:mt-4 [&>h2]:mb-1 [&>h3]:text-sm [&>h3]:font-semibold [&>h3]:mt-3 [&>h3]:mb-1 [&>p]:mb-3 [&>ul]:mb-3 [&>ul>li]:mb-1">
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => (
+            <p className="mb-3 leading-relaxed">
+              {annotateChildren(children)}
+            </p>
+          ),
+          li: ({ children }) => (
+            <li className="mb-1">{annotateChildren(children)}</li>
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
+function annotateChildren(children: React.ReactNode): React.ReactNode {
+  if (typeof children === 'string') return annotateText(children)
+  if (Array.isArray(children)) return children.map((c, i) =>
+    typeof c === 'string'
+      ? <span key={i}>{annotateText(c)}</span>
+      : c
+  )
+  return children
 }
 
 function PackDetail({ id, onApprovalChange }: { id: number; onApprovalChange: () => void }) {
@@ -174,9 +245,9 @@ function PackDetail({ id, onApprovalChange }: { id: number; onApprovalChange: ()
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
           Story pack
         </h3>
-        <pre className="whitespace-pre-wrap font-sans text-sm text-ink bg-slate-50 rounded p-4 max-h-[60vh] overflow-y-auto leading-relaxed">
-          {pack.story_pack_text}
-        </pre>
+        <div className="bg-slate-50 rounded p-4 max-h-[60vh] overflow-y-auto">
+          <StoryText text={pack.story_pack_text} />
+        </div>
       </div>
 
       {/* Approval */}
