@@ -8,6 +8,7 @@ import JourneyView from './pages/JourneyView'
 import Browser from './pages/Browser'
 import OverviewView from './pages/OverviewView'
 import VocabularyView from './pages/VocabularyView'
+import StoryPacks from './pages/StoryPacks'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/browse" element={<Browser />} />
           <Route path="/overview" element={<OverviewView />} />
           <Route path="/vocabulary" element={<VocabularyView />} />
+          <Route path="/story-packs" element={<StoryPacks />} />
         </Routes>
       </Layout>
     </BrowserRouter>
