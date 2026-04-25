@@ -517,7 +517,7 @@ def get_word_detail(
         try:
             client = anthropic.Anthropic()
             with client.messages.stream(
-                model="claude-opus-4-7",
+                model="claude-sonnet-4-6",
                 max_tokens=400,
                 system=[{
                     "type": "text",
