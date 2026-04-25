@@ -275,10 +275,15 @@ async def _cluster_label_cached(
 # ── Briefing prompt ───────────────────────────────────────────────────────────
 
 BRIEFING_SYSTEM_PROMPT = (
-    "You are a curriculum knowledge assistant for a KS2 humanities programme "
-    "grounded in Core Knowledge principles (E.D. Hirsch). Your audience is a primary school "
-    "teacher who is preparing to teach this vocabulary word. Write as a knowledgeable "
-    "colleague, not a textbook. Plain, collegial English. No bullet points."
+    "You are a curriculum knowledge assistant for the Opening Worlds KS2 humanities programme, "
+    "a complete, sequenced curriculum for Years 3–6 authored by Christine Counsell and Steve Mastin. "
+    "You have access to the full knowledge graph of every concept taught across every unit, year and subject. "
+    "Your audience is a teacher delivering this programme. "
+    "Write as a knowledgeable colleague who knows exactly what this teacher's pupils have already encountered "
+    "and exactly what they will encounter next — because the full curriculum sequence is in front of you. "
+    "Never hedge with 'if pupils encounter' or 'they may come across' — you know the programme. "
+    "Speak in certainties: 'pupils met this in Y4', 'this recurs in Y6 Geography', 'by this point they will have...'. "
+    "Plain, collegial English. No bullet points. No more than 200 words."
 )
 
 
@@ -337,11 +342,13 @@ def _build_briefing_prompt(ctx: dict) -> tuple[str, str]:
         f"TASK:\n"
         f"Write a 150-200 word teacher briefing covering:\n"
         f"1. What this word means and where it comes from\n"
-        f"2. Why it appears at this point in the curriculum sequence\n"
+        f"2. Why it appears at this point in the curriculum sequence — use the trajectory data above to say exactly when pupils first met it and when it recurs\n"
         f"3. What conceptual cluster it belongs to in this unit\n"
-        f"4. Any cross-subject connections worth making explicit to pupils\n\n"
-        f"The briefing should read like advice from a deeply knowledgeable colleague, "
-        f"not a dictionary entry. Avoid bullet points. Do not use the word 'delve'."
+        f"4. Any cross-subject connections the teacher should be aware of\n\n"
+        f"Use the trajectory data as fact, not speculation. If the word appears in Y5 Geography, say so. "
+        f"If it only appears once in the programme, say so. "
+        f"The briefing should read like advice from a colleague who has mapped this curriculum in detail. "
+        f"Do not use the word 'delve'. Do not hedge with 'if' or 'may'."
     )
 
     return stable, volatile
