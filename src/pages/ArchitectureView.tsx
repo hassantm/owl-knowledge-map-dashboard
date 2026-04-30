@@ -304,8 +304,8 @@ export default function ArchitectureView() {
   }
 
   return (
-    <div className="px-6 py-8">
-      <div className="max-w-[1440px] mx-auto">
+    <div className="px-2 py-8">
+      <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="font-serif text-2xl font-semibold text-ink mb-2">Curriculum Architecture</h1>
@@ -416,7 +416,7 @@ export default function ArchitectureView() {
 
             {/* Row labels */}
             {YEAR_ORDER.map((yr, i) => rowYStarts[i] !== undefined && (
-              <text key={yr} x={14} y={rowYStarts[i] + 20} fontSize={11} fontWeight={600} fill={T.rowLabel} letterSpacing={0.5}>
+              <text key={yr} x={14} y={rowYStarts[i] + 20} fontSize={13} fontWeight={600} fill={T.rowLabel} letterSpacing={0.5}>
                 Y{yr}
               </text>
             ))}
