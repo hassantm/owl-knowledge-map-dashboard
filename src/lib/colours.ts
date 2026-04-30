@@ -41,6 +41,13 @@ export const TIMELINE_SUBJECT: Record<string, { bg: string; chip: string; header
   rw:        { bg: 'bg-amber-50',  chip: 'bg-amber-100 text-amber-900 border-amber-300', header: 'bg-amber-200 text-amber-900' },
 }
 
+// Vocab view subject palette (design handoff — distinct from API-form SUBJECT_COLOURS)
+export const VOCAB_SUBJECT_META = {
+  History:   { name: 'History',              color: '#7AA8E8', soft: '#E1ECF9', ink: '#2C4F7C' },
+  Geography: { name: 'Geography',             color: '#86C28A', soft: '#E2F0E4', ink: '#36633A' },
+  Religion:  { name: 'Religion & Worldviews', color: '#E8B547', soft: '#F8EBC9', ink: '#7A5610' },
+} as const
+
 export const EDGE_NATURE_COLOURS: Record<string, string> = {
   reinforcement: '#94A3B8',
   extension: '#F59E0B',

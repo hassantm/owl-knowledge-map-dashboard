@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { BookOpen, Share2, CalendarRange, Bookmark, Search, BarChart3, Sparkles, ScrollText } from 'lucide-react'
+import { BookOpen, Share2, CalendarRange, Bookmark, Search, BarChart3, Sparkles, ScrollText, LayoutGrid, Globe } from 'lucide-react'
 
 const NAV = [
   { to: '/', label: 'Prepare', Icon: BookOpen, end: true },
@@ -10,6 +10,8 @@ const NAV = [
   { to: '/overview', label: 'Overview', Icon: BarChart3 },
   { to: '/vocabulary', label: 'Vocabulary', Icon: Sparkles },
   { to: '/story-packs', label: 'Story Packs', Icon: ScrollText },
+  { to: '/vocab-timeline', label: 'Vocab Timeline', Icon: LayoutGrid },
+  { to: '/word-atlas', label: 'Word Atlas', Icon: Globe },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
