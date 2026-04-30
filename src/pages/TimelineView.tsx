@@ -8,13 +8,19 @@ interface Concept {
   freq: number
 }
 
+interface Chapter {
+  name: string | null
+  concepts: Concept[]
+}
+
 interface Unit {
   key: string
   subject: 'history' | 'geography' | 'rw'
   year: number
   term: string
   title: string
-  concepts: Concept[]
+  chapters: Chapter[]
+  concepts: Concept[]  // flat list for hover/search compat
 }
 
 const SUBJECT_LABELS: Record<string, string> = {
@@ -40,7 +46,7 @@ export default function TimelineView() {
   const [hoveredConceptId, setHoveredConceptId] = useState<number | null>(null)
   const [hoveredUnitKeys, setHoveredUnitKeys] = useState<Set<string>>(new Set())
 
-  // T10 — defer expensive filter re-renders while typing
+  // Defer expensive filter re-renders while typing
   const deferredSearch = useDeferredValue(search)
 
   useEffect(() => {
@@ -50,7 +56,6 @@ export default function TimelineView() {
       .catch(() => setLoading(false))
   }, [])
 
-  // T02 — memoize lookups so handleConceptHover is stable
   const unitMap = useMemo(() => {
     const m = new Map<string, Unit>()
     for (const u of units) m.set(u.key, u)
@@ -83,14 +88,13 @@ export default function TimelineView() {
 
   return (
     <div className="p-4">
-      {/* T13 — normalised header */}
+      {/* Header */}
       <div className="mb-4 flex items-start gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Timeline Matrix</h1>
           <p className="text-sm text-slate-500 mb-2">All curriculum concepts mapped by year, term, and subject</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap mt-1">
-          {/* T16 — clearer placeholder */}
           <input
             type="search"
             placeholder="Highlight a concept…"
@@ -108,7 +112,7 @@ export default function TimelineView() {
         </div>
       </div>
 
-      {/* T03 — always rendered at fixed height to prevent layout shift */}
+      {/* Hover status line — fixed height to prevent layout shift */}
       <div className={`mb-2 text-xs text-slate-500 h-5 ${hoveredConceptId === null ? 'invisible' : ''}`}>
         {hoveredConceptId !== null && (
           <>Highlighting <strong className="text-slate-700">
@@ -165,8 +169,6 @@ export default function TimelineView() {
                     return (
                       <td
                         key={key}
-                        // T04 — smooth ring + opacity transitions
-                        // T05 — transition-all covers opacity for cell dimming
                         className={`border border-slate-200 px-2 py-2 align-top transition-all duration-100 ${
                           TIMELINE_SUBJECT[subject].bg
                         } ${isHighlighted ? 'ring-2 ring-inset ring-blue-400' : ''} ${
@@ -179,28 +181,42 @@ export default function TimelineView() {
                             <div className="font-semibold text-slate-700 mb-1.5 leading-tight">
                               {unit.title}
                             </div>
-                            {/* T05 — min-h preserves cell height; non-matching chips use opacity-0 (stay in DOM) */}
-                            <div className="flex flex-wrap gap-0.5 min-h-[3rem]">
-                              {unit.concepts.map(c => {
-                                const matches = conceptMatchesSearch(c)
-                                return (
-                                  <span
-                                    key={c.id}
-                                    onMouseEnter={() => handleConceptHover(c.id)}
-                                    onMouseLeave={() => handleConceptHover(null)}
-                                    className={`inline-block px-1.5 py-0 rounded border cursor-default leading-5 transition-opacity duration-150 ${
-                                      searchLower && !matches ? 'opacity-0 pointer-events-none' : ''
-                                    } ${
-                                      hoveredConceptId === c.id
-                                        ? 'bg-blue-200 text-blue-900 border-blue-400'
-                                        : TIMELINE_SUBJECT[subject].chip
-                                    }`}
-                                    title={`Appears in ${(conceptUnitMap.get(c.id) ?? []).length} unit(s)`}
-                                  >
-                                    {c.name}
-                                  </span>
-                                )
-                              })}
+
+                            {/* Concepts grouped by chapter */}
+                            <div className="space-y-2 min-h-12">
+                              {unit.chapters.map((chapter, chIdx) => (
+                                <div key={chIdx}>
+                                  {/* Chapter heading — only shown when there is a name */}
+                                  {chapter.name && (
+                                    <div className="text-slate-400 font-semibold uppercase tracking-wide mb-0.5 mt-1 first:mt-0"
+                                         style={{ fontSize: '10px' }}>
+                                      {chapter.name}
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap gap-0.5">
+                                    {chapter.concepts.map(c => {
+                                      const matches = conceptMatchesSearch(c)
+                                      return (
+                                        <span
+                                          key={c.id}
+                                          onMouseEnter={() => handleConceptHover(c.id)}
+                                          onMouseLeave={() => handleConceptHover(null)}
+                                          className={`inline-block px-1.5 py-0 rounded border cursor-default leading-5 transition-opacity duration-150 ${
+                                            searchLower && !matches ? 'opacity-0 pointer-events-none' : ''
+                                          } ${
+                                            hoveredConceptId === c.id
+                                              ? 'bg-blue-200 text-blue-900 border-blue-400'
+                                              : TIMELINE_SUBJECT[subject].chip
+                                          }`}
+                                          title={`Appears in ${(conceptUnitMap.get(c.id) ?? []).length} unit(s)`}
+                                        >
+                                          {c.name}
+                                        </span>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </>
                         ) : (
