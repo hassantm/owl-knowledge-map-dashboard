@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchEdges, type EdgeListItem } from '../lib/api'
-import { SUBJECT_COLOURS, EDGE_NATURE_COLOURS } from '../lib/colours'
 
 const SUBJECT_ORDER = ['History', 'Geography', 'Religion']
 const YEAR_ORDER = [3, 4, 5, 6]
@@ -12,11 +11,64 @@ const NATURE_LABELS: Record<string, string> = {
   application: 'Application',
 }
 
-// Highlighted colours for active edges
-const EDGE_HI: Record<string, string> = {
-  application: '#7C3AED',
-  extension: '#B45309',
-  reinforcement: '#475569',
+interface Theme {
+  bg: string
+  grid: string
+  colHeader: string[]
+  colTint: string[]
+  rowLabel: string
+  nodeFill: string[]
+  nodeHalo: string
+  label: string
+  sub: string
+  edgeBase: Record<string, string>
+  edgeHi: Record<string, string>
+  panel: string
+  panelBorder: string
+  panelText: string
+  panelSub: string
+  panelHover: string
+  border: string
+}
+
+const LIGHT: Theme = {
+  bg: '#fbf8f3',
+  grid: '#e9e3d6',
+  colHeader: ['#3b6fb6', '#5a8a4a', '#c8702a'],
+  colTint: ['rgba(59,111,182,0.04)', 'rgba(90,138,74,0.05)', 'rgba(200,112,42,0.04)'],
+  rowLabel: '#8a8275',
+  nodeFill: ['#3b82f6', '#5a8a4a', '#e07a2a'],
+  nodeHalo: '#ffffff',
+  label: '#1f1d18',
+  sub: '#8a8275',
+  edgeBase: { application: '#8B5CF6', extension: '#F59E0B', reinforcement: '#94A3B8' },
+  edgeHi:   { application: '#7C3AED', extension: '#B45309', reinforcement: '#475569' },
+  panel: '#fbf8f3',
+  panelBorder: '#e9e3d6',
+  panelText: '#1f1d18',
+  panelSub: '#8a8275',
+  panelHover: 'rgba(0,0,0,0.04)',
+  border: 'rgba(226,220,210,0.8)',
+}
+
+const DARK: Theme = {
+  bg: '#15171c',
+  grid: '#23262e',
+  colHeader: ['#7aa8e8', '#8bc474', '#e8a06a'],
+  colTint: ['rgba(122,168,232,0.04)', 'rgba(139,196,116,0.04)', 'rgba(232,160,106,0.04)'],
+  rowLabel: '#9aa0ac',
+  nodeFill: ['#7aa8e8', '#8bc474', '#e8a06a'],
+  nodeHalo: '#15171c',
+  label: '#e8e8ec',
+  sub: '#7a7f8a',
+  edgeBase: { application: '#c4863a', extension: '#8a6ec8', reinforcement: '#3d4452' },
+  edgeHi:   { application: '#ffb84d', extension: '#b89eff', reinforcement: '#64748b' },
+  panel: '#1c1f26',
+  panelBorder: '#2a2e38',
+  panelText: '#e8e8ec',
+  panelSub: '#7a7f8a',
+  panelHover: 'rgba(255,255,255,0.06)',
+  border: '#23262e',
 }
 
 // Layout constants
@@ -148,12 +200,15 @@ export default function ArchitectureView() {
   const [apiEdges, setApiEdges] = useState<EdgeListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showReinforcement, setShowReinforcement] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
   const [hoverNode, setHoverNode] = useState<string | null>(null)
   const [hoverEdge, setHoverEdge] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [tooltip, setTooltip] = useState<Tooltip | null>(null)
   const [containerWidth, setContainerWidth] = useState(900)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const T = darkMode ? DARK : LIGHT
 
   useEffect(() => {
     fetchEdges()
@@ -248,12 +303,6 @@ export default function ArchitectureView() {
     )
   }
 
-  const SUBJECT_TINTS = [
-    'rgba(59,111,182,0.04)',
-    'rgba(90,138,74,0.05)',
-    'rgba(200,112,42,0.04)',
-  ]
-
   return (
     <div className="px-6 py-8">
       <div className="max-w-[1440px] mx-auto">
@@ -269,7 +318,7 @@ export default function ArchitectureView() {
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-6 mb-4">
+        <div className="flex items-center gap-6 mb-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -283,22 +332,52 @@ export default function ArchitectureView() {
           <div className="flex items-center gap-4 text-xs text-slate-500">
             {(['application', 'extension', ...(showReinforcement ? ['reinforcement'] : [])] as const).map(key => (
               <span key={key} className="flex items-center gap-1.5">
-                <span className="inline-block rounded-full" style={{ width: 16, height: 2, backgroundColor: EDGE_NATURE_COLOURS[key] }} />
+                <span className="inline-block rounded-full" style={{ width: 16, height: 2, backgroundColor: T.edgeBase[key] }} />
                 {NATURE_LABELS[key]}
               </span>
             ))}
           </div>
 
-          <div className="ml-auto text-xs text-slate-400">
-            {visEdges.length} edges · {nodesById.size} concept appearances
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs text-slate-400">
+              {visEdges.length} edges · {nodesById.size} concept appearances
+            </span>
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={() => setDarkMode(d => !d)}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border transition-colors select-none"
+              style={{
+                background: darkMode ? '#23262e' : '#f1ece3',
+                borderColor: darkMode ? '#3a3f4a' : '#d4cdc0',
+                color: darkMode ? '#9aa0ac' : '#6b6457',
+              }}
+            >
+              {darkMode ? (
+                /* sun */
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              ) : (
+                /* moon */
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              )}
+              {darkMode ? 'Light' : 'Dark'}
+            </button>
           </div>
         </div>
 
         {/* Canvas */}
         <div
           ref={containerRef}
-          className="bg-[#fbf8f3] rounded-xl border border-slate-200/80 shadow-sm relative overflow-hidden"
-          style={{ minHeight: 200 }}
+          className="rounded-xl shadow-sm relative overflow-hidden transition-colors duration-200"
+          style={{ minHeight: 200, background: T.bg, border: `1px solid ${T.border}` }}
           onClick={() => setSelectedNode(null)}
         >
           <svg
@@ -310,19 +389,19 @@ export default function ArchitectureView() {
           >
             {/* Column tints */}
             {SUBJECT_ORDER.map((s, i) => (
-              <rect key={s} x={LEFT_GUTTER + i * colW} y={0} width={colW} height={svgHeight} fill={SUBJECT_TINTS[i]} />
+              <rect key={s} x={LEFT_GUTTER + i * colW} y={0} width={colW} height={svgHeight} fill={T.colTint[i]} />
             ))}
 
             {/* Row separators */}
             {rowYStarts.map((y, i) => i > 0 && (
-              <line key={i} x1={0} x2={containerWidth} y1={y} y2={y} stroke="#e9e3d6" strokeWidth={1} />
+              <line key={i} x1={0} x2={containerWidth} y1={y} y2={y} stroke={T.grid} strokeWidth={1} />
             ))}
             {/* Column separators */}
             {SUBJECT_ORDER.map((_, i) => i > 0 && (
               <line key={i}
                 x1={LEFT_GUTTER + i * colW} x2={LEFT_GUTTER + i * colW}
                 y1={HEADER_H} y2={svgHeight}
-                stroke="#e9e3d6" strokeWidth={1}
+                stroke={T.grid} strokeWidth={1}
               />
             ))}
 
@@ -331,13 +410,13 @@ export default function ArchitectureView() {
               <text key={s}
                 x={LEFT_GUTTER + i * colW + colW / 2} y={HEADER_H / 2 + 6}
                 textAnchor="middle" fontSize={15} fontWeight={600}
-                fill={SUBJECT_COLOURS[s]} letterSpacing={0.3}
+                fill={T.colHeader[i]} letterSpacing={0.3}
               >{s}</text>
             ))}
 
             {/* Row labels */}
             {YEAR_ORDER.map((yr, i) => rowYStarts[i] !== undefined && (
-              <text key={yr} x={14} y={rowYStarts[i] + 20} fontSize={11} fontWeight={600} fill="#8a8275" letterSpacing={0.5}>
+              <text key={yr} x={14} y={rowYStarts[i] + 20} fontSize={11} fontWeight={600} fill={T.rowLabel} letterSpacing={0.5}>
                 Y{yr}
               </text>
             ))}
@@ -349,7 +428,7 @@ export default function ArchitectureView() {
                 if (!a || !b) return null
                 const isHi = highlightEdges?.has(edge.id) ?? false
                 const isDim = highlightEdges !== null && !isHi
-                const stroke = isHi ? (EDGE_HI[edge.nature] ?? '#475569') : (EDGE_NATURE_COLOURS[edge.nature] ?? '#94A3B8')
+                const stroke = isHi ? (T.edgeHi[edge.nature] ?? T.edgeHi.reinforcement) : (T.edgeBase[edge.nature] ?? T.edgeBase.reinforcement)
                 const opacity = isDim ? 0.05 : isHi ? 0.9 : 0.45
                 return (
                   <path
@@ -373,7 +452,7 @@ export default function ArchitectureView() {
                 const isHi = highlightNodes?.has(node.id) ?? false
                 const isDim = highlightNodes !== null && !isHi
                 const isSel = selectedNode === node.id
-                const fill = SUBJECT_COLOURS[node.subject] ?? '#64748B'
+                const fill = T.nodeFill[node.colIdx] ?? T.nodeFill[0]
                 const r = isSel ? NODE_R + 1.5 : isHi ? NODE_R + 1 : NODE_R
                 return (
                   <g key={node.id}
@@ -382,13 +461,12 @@ export default function ArchitectureView() {
                     onMouseLeave={handleLeave}
                     onClick={ev => { ev.stopPropagation(); setSelectedNode(node.id) }}
                   >
-                    {/* white halo */}
-                    <circle cx={node.x} cy={node.y} r={r + 2} fill="white" />
+                    <circle cx={node.x} cy={node.y} r={r + 2} fill={T.nodeHalo} />
                     <circle cx={node.x} cy={node.y} r={r} fill={fill} />
                     {isSel && <circle cx={node.x} cy={node.y} r={r + 4.5} fill="none" stroke={fill} strokeWidth={1.5} opacity={0.45} />}
                     <text
                       x={node.x + 9} y={node.y + 3.5}
-                      fontSize={10} fill="#1f1d18"
+                      fontSize={10} fill={T.label}
                       fontWeight={isHi ? 600 : 400}
                       style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >{truncate(node.term, 9)}</text>
@@ -405,39 +483,48 @@ export default function ArchitectureView() {
                 position: 'absolute',
                 left: Math.min(tooltip.x + 14, containerWidth - 248),
                 top: Math.max(tooltip.y - 62, 8),
+                background: T.panel,
+                border: `1px solid ${T.panelBorder}`,
+                color: T.panelText,
                 pointerEvents: 'none',
                 zIndex: 5,
+                boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 18px rgba(40,30,10,0.10)',
               }}
-              className="bg-[#fbf8f3] border border-[#e9e3d6] rounded-lg shadow-lg px-3 py-2.5 max-w-[234px]"
+              className="rounded-lg px-3 py-2.5 max-w-[234px]"
             >
-              <div className="font-semibold text-[13px] text-ink mb-0.5">{tooltip.title}</div>
-              <div className="text-[11px] text-slate-500 italic mb-1">{tooltip.sub}</div>
-              {tooltip.note && <div className="text-[11px] text-slate-500">{tooltip.note}</div>}
+              <div className="font-semibold text-[13px] mb-0.5">{tooltip.title}</div>
+              <div className="text-[11px] italic mb-1" style={{ color: T.panelSub }}>{tooltip.sub}</div>
+              {tooltip.note && <div className="text-[11px]" style={{ color: T.panelSub }}>{tooltip.note}</div>}
             </div>
           )}
 
           {/* Detail panel */}
           {selNode && (
             <div
-              style={{ position: 'absolute', right: 12, top: 50, bottom: 12, width: 288, zIndex: 6 }}
-              className="bg-[#fbf8f3] border border-[#e9e3d6] rounded-xl shadow-xl overflow-y-auto"
+              style={{
+                position: 'absolute', right: 12, top: 50, bottom: 12, width: 288, zIndex: 6,
+                background: T.panel, border: `1px solid ${T.panelBorder}`, color: T.panelText,
+                boxShadow: darkMode ? '0 12px 32px rgba(0,0,0,0.6)' : '0 8px 28px rgba(40,30,10,0.12)',
+              }}
+              className="rounded-xl overflow-y-auto"
               onClick={ev => ev.stopPropagation()}
             >
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="text-[10px] tracking-widest text-slate-400 uppercase mb-1">
+                    <div className="text-[10px] tracking-widest uppercase mb-1" style={{ color: T.panelSub }}>
                       {selNode.subject} · Y{selNode.year}
                     </div>
-                    <div className="font-serif text-xl font-semibold text-ink leading-tight">{selNode.term}</div>
+                    <div className="font-serif text-xl font-semibold leading-tight">{selNode.term}</div>
                   </div>
                   <button
                     onClick={() => setSelectedNode(null)}
-                    className="text-slate-400 hover:text-slate-600 text-2xl leading-none ml-2 shrink-0"
+                    className="text-2xl leading-none ml-2 shrink-0 transition-opacity hover:opacity-60"
+                    style={{ color: T.panelSub }}
                   >×</button>
                 </div>
                 {selNode.unit && (
-                  <div className="text-[11px] text-slate-400 mb-3">{selNode.unit}</div>
+                  <div className="text-[11px] mb-3" style={{ color: T.panelSub }}>{selNode.unit}</div>
                 )}
                 <Link
                   to={`/concepts/${selNode.conceptId}`}
@@ -447,7 +534,7 @@ export default function ArchitectureView() {
                 </Link>
 
                 {selEdges.length === 0 && (
-                  <p className="text-xs text-slate-400 italic">No connections to other cells.</p>
+                  <p className="text-xs italic" style={{ color: T.panelSub }}>No connections to other cells.</p>
                 )}
 
                 {(['application', 'extension', 'reinforcement'] as const).map(nature => {
@@ -456,8 +543,8 @@ export default function ArchitectureView() {
                   if (group.length === 0) return null
                   return (
                     <div key={nature} className="mb-4">
-                      <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-slate-400 mb-2">
-                        <span className="inline-block rounded" style={{ width: 10, height: 2, backgroundColor: EDGE_NATURE_COLOURS[nature] }} />
+                      <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase mb-2" style={{ color: T.panelSub }}>
+                        <span className="inline-block rounded" style={{ width: 10, height: 2, backgroundColor: T.edgeBase[nature] }} />
                         {NATURE_LABELS[nature]} · {group.length}
                       </div>
                       {group.map(edge => {
@@ -468,10 +555,13 @@ export default function ArchitectureView() {
                           <button
                             key={edge.id}
                             onClick={() => setSelectedNode(otherId)}
-                            className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-slate-100/80 flex justify-between items-center gap-2 transition-colors"
+                            className="w-full text-left px-2 py-1.5 rounded text-xs flex justify-between items-center gap-2 transition-colors"
+                            style={{ color: T.panelText }}
+                            onMouseEnter={e => (e.currentTarget.style.background = T.panelHover)}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            <span className="font-medium text-ink">{other.term}</span>
-                            <span className="text-slate-400 shrink-0">{other.subject.slice(0, 3)} Y{other.year}</span>
+                            <span className="font-medium">{other.term}</span>
+                            <span className="shrink-0" style={{ color: T.panelSub }}>{other.subject.slice(0, 3)} Y{other.year}</span>
                           </button>
                         )
                       })}
