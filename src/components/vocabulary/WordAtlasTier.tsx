@@ -6,10 +6,10 @@ import { VOCAB_SUBJECT_META } from '../../lib/colours'
 import type { HighlightState } from './highlightTypes'
 
 const TIER_META = {
-  4: { label: 'Across 4 units', description: 'Highest curriculum reach — appear in every subject strand',  bg: '#1a1a1a', text: '#fff' },
-  3: { label: 'Across 3 units', description: 'Strong recurring vocabulary across most strands',           bg: '#3a3631', text: '#fff' },
-  2: { label: 'Across 2 units', description: 'Words shared between two curriculum units',                 bg: '#8a857a', text: '#fff' },
-  1: { label: '1 unit only',   description: 'Single-unit vocabulary — specialist or introductory terms', bg: '#c8c4bc', text: '#1a1a1a' },
+  4: { label: '8+ units',    description: 'Highest curriculum reach — genuinely cross-curriculum load-bearing terms', bg: '#1a1a1a', text: '#fff' },
+  3: { label: '4–7 units',   description: 'Frequently recurring vocabulary across multiple strands',                  bg: '#3a3631', text: '#fff' },
+  2: { label: '2–3 units',   description: 'Words shared between two or three curriculum units',                       bg: '#8a857a', text: '#fff' },
+  1: { label: '1 unit only', description: 'Single-unit vocabulary — specialist or introductory terms',               bg: '#c8c4bc', text: '#1a1a1a' },
 } as const
 
 const FULL_TIERS = new Set([3, 4])

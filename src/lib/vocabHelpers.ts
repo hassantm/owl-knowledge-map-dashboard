@@ -64,7 +64,13 @@ const REACH_STYLES: ReachStyle[] = [
 ]
 
 export function reachStyle(u: number): ReachStyle {
-  const idx = Math.min(Math.max(Math.round(u) - 1, 0), 3)
+  // Map unit count to tier index (0–3) matching the new tier boundaries:
+  // tier 1 (1 unit) → idx 0, tier 2 (2–3) → idx 1, tier 3 (4–7) → idx 2, tier 4 (8+) → idx 3
+  let idx: number
+  if (u >= 8) idx = 3
+  else if (u >= 4) idx = 2
+  else if (u >= 2) idx = 1
+  else idx = 0
   return REACH_STYLES[idx]
 }
 

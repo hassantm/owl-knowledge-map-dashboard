@@ -51,10 +51,17 @@ export default function WordAtlasView() {
     return allWords.filter(w => w.word.toLowerCase().includes(q))
   }, [allWords, deferredTrace])
 
+  const TIER_RANGES: Array<{ n: 4 | 3 | 2 | 1; min: number; max: number }> = [
+    { n: 4, min: 8, max: Infinity },
+    { n: 3, min: 4, max: 7 },
+    { n: 2, min: 2, max: 3 },
+    { n: 1, min: 1, max: 1 },
+  ]
+
   const tiers = useMemo(
-    () => ([4, 3, 2, 1] as const).map(n => ({
+    () => TIER_RANGES.map(({ n, min, max }) => ({
       n,
-      words: filteredWords.filter(w => w.units === n),
+      words: filteredWords.filter(w => w.units >= min && w.units <= max),
     })),
     [filteredWords]
   )
