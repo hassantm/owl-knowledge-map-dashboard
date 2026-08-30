@@ -27,6 +27,10 @@ Statuses: `TODO` / `IN PROGRESS` / `DONE`
 | T19 | P3       | Replace density chart with Recharts `<BarChart>`               | `src/pages/Dashboard.tsx`                                               | 40 min | DONE   | —          |
 | T20 | P3       | Convert GraphView inline styles to Tailwind                    | `src/pages/GraphView.tsx`                                               | 60 min | DONE   | T01        |
 
+| T21 | P1       | Vocab data layer: convert data.js → vocabData.ts + vocabHelpers.ts | `src/lib/vocabData.ts` (new), `src/lib/vocabHelpers.ts` (new), `src/components/vocabulary/highlightTypes.ts` (new), `src/lib/colours.ts` | 90 min | DONE   | —          |
+| T22 | P1       | VocabTimelineView: VocabPill + HighlightControls + BookletCard + page | `src/components/vocabulary/VocabPill.tsx` (new), `HighlightControls.tsx` (new), `BookletCard.tsx` (new), `src/pages/VocabTimelineView.tsx` (new), `src/App.tsx`, `src/components/Layout.tsx` | 3 hr   | DONE   | T21        |
+| T23 | P1       | WordAtlasView: WordAtlasTier + page                            | `src/components/vocabulary/WordAtlasTier.tsx` (new), `src/pages/WordAtlasView.tsx` (new)                                                | 2 hr   | DONE   | T21        |
+
 ---
 
-All 20 tasks completed 2026-03-28.
+T01–T20 completed 2026-03-28. T21–T23 completed 2026-04-30.
