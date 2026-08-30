@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Knowledge Map · Vocabulary — Directions</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  /* Highlight pulse */
+  .vocab-hl { box-shadow: 0 0 0 2px var(--hl-color, #c96442), 0 0 0 4px rgba(201,100,66,0.15) !important; transition: box-shadow 160ms; }
+  .vocab-recur { outline: 1px dashed var(--hl-color, #c96442); outline-offset: 1px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data.js?v=2"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="direction-1.jsx"></script>
+<script type="text/babel" src="direction-2.jsx"></script>
+<script type="text/babel" src="direction-3.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+  const data = window.VOCAB_DATA;
+
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "highlightOn": true,
+    "minRecur": 2,
+    "highlightColor": "#c96442",
+    "traceWord": "",
+    "dimNonMatching": true,
+    "boldRecurrences": true
+  }/*EDITMODE-END*/;
+
+  // Make tweaks available globally so all three directions can read them.
+  // We use a tiny pub/sub so direction components re-render when tweaks change.
+  window.__VOCAB_TWEAKS = { ...TWEAK_DEFAULTS };
+  window.__VOCAB_TWEAKS_LISTENERS = new Set();
+  window.useVocabTweaks = () => {
+    const [, force] = React.useReducer(x => x + 1, 0);
+    React.useEffect(() => {
+      window.__VOCAB_TWEAKS_LISTENERS.add(force);
+      return () => window.__VOCAB_TWEAKS_LISTENERS.delete(force);
+    }, []);
+    return window.__VOCAB_TWEAKS;
+  };
+
+  const App = () => {
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+    // mirror to global
+    React.useEffect(() => {
+      window.__VOCAB_TWEAKS = t;
+      window.__VOCAB_TWEAKS_LISTENERS.forEach(fn => fn());
+      document.documentElement.style.setProperty('--hl-color', t.highlightColor);
+    }, [t]);
+
+    return (
+      <React.Fragment>
+        <DesignCanvas
+          title="Vocabulary Matrix · Directions"
+          subtitle="Three ways to display vocab by booklet & chapter, with unit-frequency. Toggle Tweaks (top-right) to highlight recurrences."
+        >
+          <DCSection id="reference" title="Reference" subtitle="The current Timeline Matrix — pill grid with no frequency signal.">
+            <DCArtboard id="ref" label="Current view" width={1640} height={840}>
+              <div style={{ width: 1640, padding: 32, background: '#fff', fontFamily: "system-ui" }}>
+                <img src="uploads/pasted-1777544303431-0.png" style={{ width: '100%', display: 'block' }} alt="current matrix"/>
+              </div>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="d1" title="Direction 1 · Refined Pill Grid" subtitle="Same shape as today's matrix, but unit-counts are visible on every recurring word.">
+            <DCArtboard id="d1-art" label="Frequency badges" width={1640} height={3400}>
+              <DirectionOne data={data} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="d2" title="Direction 2 · Word Atlas" subtitle="Word-first index across the whole curriculum, tiered by reach.">
+            <DCArtboard id="d2-art" label="Tiered word index" width={1640} height={3000}>
+              <DirectionTwo data={data} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="d3" title="Direction 3 · Booklet Library" subtitle="Booklets as cards, words sized by curriculum reach.">
+            <DCArtboard id="d3-art" label="Frequency-weighted type" width={1640} height={3600}>
+              <DirectionThree data={data} />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+
+        <TweaksPanel title="Recurrence highlighting">
+          <TweakSection label="Highlighting" />
+          <TweakToggle label="Highlight recurrences" value={t.highlightOn} onChange={v => setTweak('highlightOn', v)} />
+          <TweakSlider label="Minimum recurrence" value={t.minRecur} min={2} max={4} step={1} unit=" units" onChange={v => setTweak('minRecur', v)} />
+          <TweakColor label="Highlight color" value={t.highlightColor} onChange={v => setTweak('highlightColor', v)} />
+          <TweakToggle label="Bold recurring words" value={t.boldRecurrences} onChange={v => setTweak('boldRecurrences', v)} />
+
+          <TweakSection label="Trace a word" />
+          <TweakText label="Word to trace" value={t.traceWord} onChange={v => setTweak('traceWord', v)} placeholder="e.g. exile, pharaoh" />
+          <TweakToggle label="Dim non-matching" value={t.dimNonMatching} onChange={v => setTweak('dimNonMatching', v)} />
+        </TweaksPanel>
+      </React.Fragment>
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
