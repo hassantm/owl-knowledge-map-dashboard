@@ -44,9 +44,8 @@ def get_timeline():
                     c.concept_id AS id,
                     c.term AS name,
                     COUNT(*) AS freq
-                FROM occurrences o
+                FROM v_occurrences o
                 JOIN concepts c ON c.concept_id = o.concept_id
-                WHERE o.validation_status IS DISTINCT FROM 'rejected'
                 GROUP BY o.subject, o.year, o.term, o.unit, o.chapter, c.concept_id, c.term
                 ORDER BY
                     o.year,
@@ -125,7 +124,7 @@ def get_concept_units(concept_id: int):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 SELECT DISTINCT o.subject, o.year, o.term
-                FROM occurrences o
+                FROM v_occurrences o
                 WHERE o.concept_id = %s
             """, (concept_id,))
             rows = cur.fetchall()

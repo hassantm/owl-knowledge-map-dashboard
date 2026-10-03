@@ -19,29 +19,27 @@ def get_stats() -> dict:
 
             cur.execute("""
                 SELECT subject, COUNT(*) AS cnt
-                FROM occurrences
-                WHERE validation_status = 'confirmed'
+                FROM v_occurrences
                 GROUP BY subject ORDER BY subject
             """)
             by_subject = {r["subject"]: r["cnt"] for r in cur.fetchall()}
             occurrences = sum(by_subject.values())
 
             cur.execute("""
-                SELECT COUNT(DISTINCT concept_id) FROM occurrences
-                WHERE validation_status = 'confirmed'
+                SELECT COUNT(DISTINCT concept_id) FROM v_occurrences
             """)
             confirmed_concepts = cur.fetchone()["count"]
 
             cur.execute("""
-                SELECT COUNT(DISTINCT unit || subject || CAST(year AS TEXT))
-                FROM occurrences WHERE validation_status = 'confirmed'
+                SELECT COUNT(DISTINCT unit_id)
+                FROM v_occurrences
             """)
             units = cur.fetchone()["count"]
 
             cur.execute("""
                 SELECT subject, year, COUNT(*) AS cnt
-                FROM occurrences
-                WHERE is_introduction = 1 AND validation_status = 'confirmed'
+                FROM v_occurrences
+                WHERE is_introduction
                 GROUP BY subject, year
                 ORDER BY subject, year
             """)
@@ -67,8 +65,8 @@ def get_stats() -> dict:
             cur.execute("""
                 SELECT ofrom.subject, oto.subject, COUNT(*) AS cnt
                 FROM edges e
-                JOIN occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
-                JOIN occurrences oto   ON e.to_occurrence   = oto.occurrence_id
+                JOIN v_occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
+                JOIN v_occurrences oto   ON e.to_occurrence   = oto.occurrence_id
                 WHERE e.edge_nature = 'application' AND e.confirmed_by IS NOT NULL
                 GROUP BY ofrom.subject, oto.subject
                 ORDER BY cnt DESC
@@ -102,10 +100,9 @@ def get_unit_density() -> list:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 SELECT subject, year, term, unit,
-                       SUM(CASE WHEN is_introduction = 1 THEN 1 ELSE 0 END) AS intros,
+                       SUM(CASE WHEN is_introduction THEN 1 ELSE 0 END) AS intros,
                        COUNT(*) AS total
-                FROM occurrences
-                WHERE validation_status = 'confirmed'
+                FROM v_occurrences
                 GROUP BY subject, year, term, unit
                 ORDER BY intros DESC
             """)
@@ -131,11 +128,10 @@ def get_year_progression() -> list:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 SELECT year,
-                       SUM(CASE WHEN is_introduction = 1 THEN 1 ELSE 0 END) AS new_terms,
-                       SUM(CASE WHEN is_introduction = 0 THEN 1 ELSE 0 END) AS recurrences,
+                       SUM(CASE WHEN is_introduction THEN 1 ELSE 0 END) AS new_terms,
+                       SUM(CASE WHEN NOT is_introduction THEN 1 ELSE 0 END) AS recurrences,
                        COUNT(*) AS total
-                FROM occurrences
-                WHERE validation_status = 'confirmed'
+                FROM v_occurrences
                 GROUP BY year
                 ORDER BY year
             """)
@@ -165,9 +161,8 @@ def get_cross_subject_bridges() -> list:
                        COUNT(*) AS total_occ,
                        MIN(o.year) AS first_year,
                        MAX(o.year) AS last_year
-                FROM occurrences o
+                FROM v_occurrences o
                 JOIN concepts c ON o.concept_id = c.concept_id
-                WHERE o.validation_status = 'confirmed'
                 GROUP BY c.concept_id, c.term
                 HAVING COUNT(DISTINCT o.subject) > 1
                 ORDER BY subject_count DESC, total_occ DESC, c.term
@@ -198,9 +193,9 @@ def get_longest_lived_terms(limit: int = 40) -> list:
                 SELECT c.term, o.subject, MIN(o.year) AS intro_year, MAX(o.year) AS last_year,
                        MAX(o.year) - MIN(o.year) AS years_active,
                        COUNT(*) AS occurrences
-                FROM occurrences o
+                FROM v_occurrences o
                 JOIN concepts c ON o.concept_id = c.concept_id
-                WHERE o.is_introduction = 1 AND o.validation_status = 'confirmed'
+                WHERE o.is_introduction
                 GROUP BY c.concept_id, c.term, o.subject
                 HAVING MAX(o.year) - MIN(o.year) > 0
                 ORDER BY years_active DESC, occurrences DESC
@@ -225,11 +220,11 @@ def get_filter_options() -> dict:
     conn = get_conn()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT DISTINCT subject FROM occurrences ORDER BY subject")
+            cur.execute("SELECT DISTINCT subject FROM v_occurrences ORDER BY subject")
             subjects = [r["subject"] for r in cur.fetchall()]
-            cur.execute("SELECT DISTINCT year FROM occurrences ORDER BY year")
+            cur.execute("SELECT DISTINCT year FROM v_occurrences ORDER BY year")
             years = [r["year"] for r in cur.fetchall()]
-            cur.execute("SELECT DISTINCT term FROM occurrences ORDER BY term")
+            cur.execute("SELECT DISTINCT term FROM v_occurrences ORDER BY term")
             terms = [r["term"] for r in cur.fetchall()]
     finally:
         conn.close()

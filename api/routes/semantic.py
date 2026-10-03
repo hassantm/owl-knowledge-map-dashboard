@@ -59,9 +59,8 @@ def _compute_clusters(n_clusters: int, context_weight: float) -> str:
                     o.year,
                     o.term_in_context
                 FROM concepts c
-                JOIN occurrences o ON o.concept_id = c.concept_id
-                WHERE o.validation_status IN ('confirmed', 'confirmed_with_flag')
-                  AND o.term_in_context IS NOT NULL
+                JOIN v_occurrences o ON o.concept_id = c.concept_id
+                WHERE o.term_in_context IS NOT NULL
                   AND o.term_in_context != ''
                 ORDER BY c.concept_id, o.year
             """)

@@ -42,8 +42,8 @@ def get_graph(
                        oto.is_introduction AS to_is_intro,
                        oto.term_in_context AS to_context
                 FROM edges e
-                JOIN occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
-                JOIN occurrences oto   ON e.to_occurrence   = oto.occurrence_id
+                JOIN v_occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
+                JOIN v_occurrences oto   ON e.to_occurrence   = oto.occurrence_id
                 JOIN concepts c        ON ofrom.concept_id  = c.concept_id
                 WHERE e.confirmed_by IS NOT NULL
             """

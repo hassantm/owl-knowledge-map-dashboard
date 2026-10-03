@@ -15,7 +15,7 @@ def list_concepts(
     page_size: int = Query(50, alias="pageSize"),
 ) -> dict:
     """Paginated concept list with optional search and filters."""
-    conditions = ["o.validation_status = 'confirmed'"]
+    conditions = ["TRUE"]
     params: list = []
 
     if q:
@@ -30,7 +30,7 @@ def list_concepts(
 
     count_sql = f"""
         SELECT COUNT(DISTINCT c.concept_id)
-        FROM concepts c JOIN occurrences o ON c.concept_id = o.concept_id
+        FROM concepts c JOIN v_occurrences o ON c.concept_id = o.concept_id
         WHERE {where}
     """
     select_sql = f"""
@@ -39,8 +39,8 @@ def list_concepts(
                STRING_AGG(DISTINCT o.subject, ',') AS subjects,
                MIN(o.year) AS first_year,
                MAX(o.year) AS last_year,
-               SUM(CASE WHEN o.is_introduction = 1 THEN 1 ELSE 0 END) AS intro_count
-        FROM concepts c JOIN occurrences o ON c.concept_id = o.concept_id
+               SUM(CASE WHEN o.is_introduction THEN 1 ELSE 0 END) AS intro_count
+        FROM concepts c JOIN v_occurrences o ON c.concept_id = o.concept_id
         WHERE {where}
         GROUP BY c.concept_id
         {having}
@@ -77,8 +77,11 @@ def get_concept(concept_id: int) -> dict:
             concept = dict(row)
 
             cur.execute(f"""
-                SELECT o.*
-                FROM occurrences o
+                SELECT o.occurrence_id, o.concept_id, o.unit_id, o.subject, o.year, o.term,
+                       o.unit, o.chapter, o.slide_number,
+                       o.is_introduction::int AS is_introduction, o.intro_source,
+                       o.term_in_context, o.source_path, o.vocab_source
+                FROM v_occurrences o
                 WHERE o.concept_id = %s
                 ORDER BY o.year, {TERM_ORDER_SQL}, o.slide_number
             """, (concept_id,))
@@ -95,8 +98,8 @@ def get_concept(concept_id: int) -> dict:
                            oto.year AS to_year, oto.term AS to_term,
                            oto.subject AS to_subject, oto.unit AS to_unit
                     FROM edges e
-                    JOIN occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
-                    JOIN occurrences oto   ON e.to_occurrence   = oto.occurrence_id
+                    JOIN v_occurrences ofrom ON e.from_occurrence = ofrom.occurrence_id
+                    JOIN v_occurrences oto   ON e.to_occurrence   = oto.occurrence_id
                     WHERE e.from_occurrence = ANY(%s) OR e.to_occurrence = ANY(%s)
                     ORDER BY ofrom.year, ofrom.term
                 """, (occ_ids, occ_ids))
