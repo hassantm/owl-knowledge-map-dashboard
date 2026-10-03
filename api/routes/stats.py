@@ -11,7 +11,7 @@ def get_stats() -> dict:
     conn = get_conn()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT COUNT(*) FROM concepts")
+            cur.execute("SELECT COUNT(*) FROM concepts WHERE merged_into IS NULL")
             concepts = cur.fetchone()["count"]
 
             cur.execute("SELECT COUNT(*) FROM edges WHERE confirmed_by IS NOT NULL")
