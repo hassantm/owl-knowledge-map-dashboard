@@ -54,8 +54,8 @@ def _get_chapter_concepts(conn, unit: str, chapter: str) -> list[dict]:
                 c.term,
                 c.tier,
                 c.register,
-                MIN(o.is_introduction) AS any_introduction
-            FROM occurrences o
+                MIN(o.is_introduction::int) AS any_introduction
+            FROM v_occurrences o
             JOIN concepts c ON c.concept_id = o.concept_id
             WHERE o.unit    = %s
               AND o.chapter = %s
@@ -73,8 +73,8 @@ def _get_chapter_cooccurrences(conn, unit: str, chapter: str) -> list[dict]:
                 LEAST(o1.concept_id, o2.concept_id)    AS concept_a_id,
                 GREATEST(o1.concept_id, o2.concept_id) AS concept_b_id,
                 COUNT(DISTINCT o1.slide_number)         AS weight
-            FROM occurrences o1
-            JOIN occurrences o2
+            FROM v_occurrences o1
+            JOIN v_occurrences o2
                 ON  o1.unit        = o2.unit
                 AND o1.chapter     = o2.chapter
                 AND o1.concept_id != o2.concept_id
@@ -135,8 +135,8 @@ def _get_word_detail_context(conn, concept_id: int, unit: str) -> dict | None:
 
         cur.execute("""
             SELECT year, term AS term_period, unit, chapter,
-                   is_introduction, term_in_context
-            FROM occurrences
+                   is_introduction::int AS is_introduction, term_in_context
+            FROM v_occurrences
             WHERE concept_id = %s
             ORDER BY year, term
         """, (concept_id,))
@@ -369,7 +369,7 @@ def _load_navigation() -> str:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 SELECT DISTINCT o.subject, o.year, o.unit, o.chapter
-                FROM occurrences o
+                FROM v_occurrences o
                 JOIN concepts c ON c.concept_id = o.concept_id
                 WHERE c.enrichment_status = 'approved'
                   AND o.chapter IS NOT NULL

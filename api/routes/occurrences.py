@@ -16,7 +16,7 @@ def list_occurrences(
     page_size: int = Query(50, alias="pageSize"),
 ) -> dict:
     """Paginated corpus browser with filters."""
-    conditions = ["o.validation_status = 'confirmed'"]
+    conditions = ["TRUE"]
     params: list = []
 
     if subject:
@@ -35,7 +35,7 @@ def list_occurrences(
     where = " AND ".join(conditions)
 
     count_sql = f"""
-        SELECT COUNT(*) FROM occurrences o
+        SELECT COUNT(*) FROM v_occurrences o
         JOIN concepts c ON o.concept_id = c.concept_id
         WHERE {where}
     """
@@ -43,8 +43,8 @@ def list_occurrences(
         SELECT o.occurrence_id, c.concept_id, c.term,
                o.subject, o.year, o.term AS term_period,
                o.unit, o.chapter, o.slide_number,
-               o.is_introduction, o.term_in_context
-        FROM occurrences o
+               o.is_introduction::int AS is_introduction, o.term_in_context
+        FROM v_occurrences o
         JOIN concepts c ON o.concept_id = c.concept_id
         WHERE {where}
         ORDER BY o.year, {TERM_ORDER_SQL}, o.subject, c.term
